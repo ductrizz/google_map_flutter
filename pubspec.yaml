@@ -35,6 +35,9 @@ dependencies:
   location: ^4.4.0
   #Draw polyline pointer when change position
   flutter_polyline_points: ^1.0.0
+  get: ^4.6.5
+  http: ^0.13.4
+  flutter_google_places: ^0.3.0
 
 
   # The following adds the Cupertino Icons font to your application.
@@ -67,6 +70,7 @@ flutter:
   assets:
     - assets/destination_map_marker.png
     - assets/driving_pin.png
+    - assets/user_location_marker.png
     - assets/friend1.jpg
     - assets/friend2.jpg
 
