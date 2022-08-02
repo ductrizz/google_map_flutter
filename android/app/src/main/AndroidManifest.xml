@@ -1,9 +1,20 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.example.google_map_flutter.google_map_flutter">
-   <application
+
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
+    <application
         android:label="google_map_flutter"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
+
+       <!-- Google Map Setting:
+             The next step is getting an API key for both Android -->
+       <meta-data android:name="com.google.android.geo.API_KEY"
+           android:value="AIzaSyBArz9lNJL16tlDEr_CuP0akLryqY__5-4"/>
+
+
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -31,4 +42,5 @@
             android:name="flutterEmbedding"
             android:value="2" />
     </application>
+
 </manifest>
