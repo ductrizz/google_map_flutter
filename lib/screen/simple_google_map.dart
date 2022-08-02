@@ -36,8 +36,6 @@ class _SimpleGoogleMap extends State<SimpleGoogleMap> {
   LocationData? destinationLocation;
 // wrapper around the location API
   Location? location;
-  var pinPosition;
-  var destPosition;
 
 
   @override
@@ -106,6 +104,16 @@ class _SimpleGoogleMap extends State<SimpleGoogleMap> {
         title: const Text("Google Map Flutter"),
         titleTextStyle: Theme.of(context).textTheme.headline5,
       ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endTop,
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(top: 80.0),
+        child: FloatingActionButton(
+          child: Icon(Icons.my_location_outlined),
+          onPressed: (){
+            fixCameraPosition();
+          },
+        ),
+      ),
       body: Stack(
         children: [
           GoogleMap(
@@ -113,7 +121,8 @@ class _SimpleGoogleMap extends State<SimpleGoogleMap> {
             tiltGesturesEnabled: true,
             compassEnabled: true,
             scrollGesturesEnabled: true,
-            zoomGesturesEnabled: false,
+            zoomGesturesEnabled: true,
+            myLocationButtonEnabled: false,
             markers: _markers,
             mapType: MapType.normal,
             initialCameraPosition: initialCameraPosition,
