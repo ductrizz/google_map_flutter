@@ -2,21 +2,102 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_polyline_points/flutter_polyline_points.dart';
+import 'package:get/get_state_manager/get_state_manager.dart';
+import 'package:get/state_manager.dart';
+import 'package:google_map_flutter/pages/simple_google_map_binding.dart' ;
 import 'package:google_map_flutter/res/google_map_core.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:location/location.dart';
 
 
 
-class SimpleGoogleMap extends StatefulWidget {
+class SimpleGoogleMap extends GetView<SimpleGoogleMapController> {
+
+  
+  
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("Google Map Flutter"),
+        titleTextStyle: Theme.of(context).textTheme.headline5,
+        centerTitle: true,
+        actions: [
+          IconButton(
+              onPressed: (){
+                controller.addPolylines();
+            },
+              icon: const Icon(Icons.double_arrow_rounded)
+          ),
+        ],
+      ),
+
+      floatingActionButtonLocation: FloatingActionButtonLocation.endTop,
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(top: 80.0),
+        child: FloatingActionButton(
+          child: const Icon(Icons.my_location_outlined),
+          onPressed: (){
+            controller.fixCameraPosition();
+          },
+        ),
+      ),
+      body: Obx(() {
+        Set markers = controller.markers;
+        //print("market :: $markers , ${controller.markers.length}");
+        controller.polyLines.value.forEach((element) {
+          print("UI polyline length :: ${controller.polyLines.length} == >> UI polyline ${element.points}");
+        });
+        return Stack(
+          children: [
+            GoogleMap(
+              myLocationEnabled: false,
+              tiltGesturesEnabled: true,
+              compassEnabled: true,
+              scrollGesturesEnabled: true,
+              zoomGesturesEnabled: true,
+              myLocationButtonEnabled: true,
+              markers: controller.markers,
+              polylines: controller.polyLines,
+              mapType: MapType.normal,
+              initialCameraPosition: controller.initialCameraPosition.value,
+              onMapCreated: (GoogleMapController newController) {
+                controller.mapController.value.complete(newController);
+                //controller.showPinsOnMap();
+              },
+            ),
+            Positioned(
+                bottom: 10,
+                right: 100,
+                left: 100,
+                child: Container(
+                    alignment: Alignment.center,
+                    height: 40,
+                    decoration: BoxDecoration(color: Colors.grey.withOpacity(0.4),
+                        borderRadius: const BorderRadius.all(Radius.circular(20))
+                    ),
+                    child: Text("X: ${controller.currentLocation.value.latitude} \nY: ${controller.currentLocation.value.longitude}",
+                      textAlign: TextAlign.justify,
+                      overflow: TextOverflow.visible,)
+                )
+            )
+          ],
+        );
+      } ,
+      ),
+    );
+  }
+}
+
+/*class SimpleGoogleMap extends StatefulWidget {
   const SimpleGoogleMap({Key? key}) : super(key: key);
 
   @override
   State<SimpleGoogleMap> createState() => _SimpleGoogleMap();
 }
 
+
 class _SimpleGoogleMap extends State<SimpleGoogleMap> {
-  final String googleAPIKey = "AIzaSyBArz9lNJL16tlDEr_CuP0akLryqY__5-4";
   final Completer<GoogleMapController> _controller = Completer();
   final Set<Marker> _markers = <Marker>{};
 
@@ -201,7 +282,7 @@ class _SimpleGoogleMap extends State<SimpleGoogleMap> {
         (destinationLocation.longitude ?? 0));
     print("Polyline ::Origin: ${currentLocation.latitude}, ${currentLocation.longitude} => Dest: ${destinationLocation.latitude}, ${destinationLocation.longitude}");
     PolylineResult result = await polylinePoints.getRouteBetweenCoordinates(
-        googleAPIKey,
+        googleApiKey,
         _origin,
         _destination,
         travelMode: TravelMode.driving,);
@@ -258,4 +339,4 @@ class _SimpleGoogleMap extends State<SimpleGoogleMap> {
     setPolylines();
   }
 
-}
+}*/

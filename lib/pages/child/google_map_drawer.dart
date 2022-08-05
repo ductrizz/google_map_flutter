@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+/*import 'package:flutter/material.dart';
 import 'package:google_map_flutter/repository/location_repository.dart';
 
 class GoogleMapDrawer extends StatefulWidget {
@@ -10,7 +10,7 @@ class GoogleMapDrawer extends StatefulWidget {
 
 class _GoogleMapDrawerState extends State<GoogleMapDrawer> {
   final TextEditingController _destinationController = TextEditingController();
-  final LocationRepository locationRepository = LocationRepository();
+ // final LocationRepository locationRepository = LocationRepository();
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -33,4 +33,4 @@ class _GoogleMapDrawerState extends State<GoogleMapDrawer> {
       ),
     );
   }
-}
+}*/

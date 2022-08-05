@@ -1,16 +1,29 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:google_map_flutter/pages/simple_google_map.dart';
+import 'package:google_map_flutter/pages/simple_google_map_binding.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 void main() {
-  /*if (defaultTargetPlatform == TargetPlatform.android) {
+  if (defaultTargetPlatform == TargetPlatform.android) {
     AndroidGoogleMapsFlutter.useAndroidViewSurface = true;
-  }*/
-  runApp(const MyApp());
+  }
+  //runApp(const MyApp());
+  runApp(GetMaterialApp(
+    initialRoute: '/',
+    initialBinding: SimpleGoogleMapBinding(),
+    getPages: [
+      GetPage(
+        name: '/',
+        page: () => SimpleGoogleMap(),
+        binding: SimpleGoogleMapBinding(),
+      ),
+    ],
+  ));
 }
 
-class MyApp extends StatelessWidget {
+/*class MyApp extends StatelessWidget {
   const MyApp({Key? key}) : super(key: key);
 
   // This widget is the root of your application.
@@ -21,9 +34,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: const SimpleGoogleMap(),
+      home: SimpleGoogleMap(),
     );
   }
-}
-
-
+}*/
