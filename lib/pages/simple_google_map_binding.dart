@@ -1,13 +1,14 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_polyline_points/flutter_polyline_points.dart';
 import 'package:get/get.dart';
-import 'package:google_map_flutter/repository/people_nearby_repository.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:location/location.dart';
-
+import '../model/Data.dart';
+import '../repository/nearby_repository.dart';
+import '../res/caculator.dart';
 import '../res/google_map_core.dart';
+import '../res/text_icon.dart';
 
 class SimpleGoogleMapBinding implements Bindings{
   @override
@@ -18,7 +19,8 @@ class SimpleGoogleMapBinding implements Bindings{
 
 class SimpleGoogleMapController extends GetxController{
 ///Properties
-  final PeopleNearbyRepository _peopleNearbyRepository = PeopleNearbyRepository();
+  final NearbyRepository _nearbyRepository = NearbyRepository();
+  List<Data> peopleNearby = [];
   final Rx<Completer<GoogleMapController>>  mapController = Completer<GoogleMapController>().obs;
   var initialCameraPosition = const CameraPosition(
     target: LatLng(28.527582, 77.0688971),
@@ -55,13 +57,9 @@ class SimpleGoogleMapController extends GetxController{
     super.onInit();
     setInitialLocation();
     await setSourceAndDestinationIcons();
-    await _peopleNearbyRepository.getHttpPeopleNearby();
-  }
-
-  @override
-  void onReady() {
-    super.onReady();
+    await getResponse();
     //Call Location
+    showNearby();
     location.onLocationChanged.listen((LocationData newCurrentLocation) {
       currentLocation = newCurrentLocation.obs;
       initialCameraPosition = CameraPosition(
@@ -75,16 +73,20 @@ class SimpleGoogleMapController extends GetxController{
     });
   }
 
-  @override
-  void onClose() {
-    super.onClose();
+  Future<void> getResponse()async {
+    await _nearbyRepository.getPostman();
+    peopleNearby = _nearbyRepository.peopleNearby;
   }
+
+
 
 ///Main Function:
 
-
-
 ///Create Polyline & Pin Marker
+
+  void onTapHandle(LatLng latLng){
+
+  }
 
  //Set Icon Bitmap.
   Future<void> setSourceAndDestinationIcons() async {
@@ -107,6 +109,7 @@ class SimpleGoogleMapController extends GetxController{
     })).obs;
 
     showPinsOnMap();
+    //await showNearby();
     fixCameraPosition();
   }
 
@@ -118,12 +121,10 @@ class SimpleGoogleMapController extends GetxController{
           currentLocation.value.longitude ?? 0);
 
       markers.removeWhere(
-              (m) => m.markerId.value == PinMarker.sourcePin.name);
+              (m) => m.markerId.value == PinMarker.originPin.name);
 
-      _addMarket(
-        markerId: PinMarker.sourcePin,
+      _addMarkerOrigin(
         position: pinPosition,
-        iconMarker: originIcon,
       );
   }
 
@@ -139,12 +140,16 @@ class SimpleGoogleMapController extends GetxController{
     controller.animateCamera(CameraUpdate.newCameraPosition(cPosition));
   }
 
-  void addPolylines() async  {
+  void addPolylines({required LatLng destiLocation}) async  {
     polylineCoordinates.clear();
     List<PointLatLng> listPolyLinesPoint = (await _polyLinePoints(
       origin: currentLocation.value,
-      destination: destinationLocation.value
+      destination: LocationData.fromMap({
+        "latitude" : destiLocation.latitude,
+        "longitude" : destiLocation.longitude
+      })
     )).points;
+
     if(listPolyLinesPoint.isNotEmpty){
       for (var point in listPolyLinesPoint) {
         polylineCoordinates.add(
@@ -158,9 +163,36 @@ class SimpleGoogleMapController extends GetxController{
           color: const Color.fromARGB(255, 255, 0, 0),
           points: polylineCoordinates
       )).obs;
-      polylineCoordinates.forEach((element) {
-        print('point Polyline :: ${element.latitude}, ${element.longitude} ');
-      });
+      double totalCalculator = 0;
+      for(int i=0; i < (polylineCoordinates.length -1); i++){
+        var point1 = polylineCoordinates[i];
+        var point2 = polylineCoordinates[i + 1];
+        totalCalculator += double.parse(calculatorDistance(
+            point1.latitude, point1.longitude,
+            point2.latitude, point2.longitude,
+            "K"));
+      }
+      var indexCenter = (polylineCoordinates.length/2).ceil();
+      var positionCenter = polylineCoordinates[indexCenter];
+
+      markers.removeWhere(
+              (m) => m.markerId.value == "title");
+      BitmapDescriptor bitmapDescriptor = await createCustomMarkerBitmap("${totalCalculator.toStringAsPrecision(2)} km");
+      markers.value.add(
+          Marker(
+              markerId: const MarkerId("title"),
+              position: positionCenter,
+              icon: bitmapDescriptor,
+          ));
+          /*Marker(
+            markerId: const MarkerId("title"),
+            position: positionCenter,
+            icon: BitmapDescriptor.defaultMarkerWithHue(0),
+            infoWindow: InfoWindow(
+                title: "$totalCalculator km",
+              anchor: const Offset(-5.0 , -5.0)
+            )
+          ));*/
     }
   }
 
@@ -169,23 +201,56 @@ class SimpleGoogleMapController extends GetxController{
     var pinPosition = LatLng(
         currentLocation.value.latitude ?? 0,
         currentLocation.value.longitude ?? 0);
-    // get a LatLng out of the LocationData object
-    var destPosition = LatLng(
-      destinationLocation.value.latitude  ?? 0,
-      destinationLocation.value.longitude ?? 0);
-    // add the initial source location pin
-    _addMarket(
-      markerId: PinMarker.sourcePin,
+
+    _addMarkerOrigin(
       position: pinPosition,
-      iconMarker: originIcon,
     );
-    // destination pin
-    _addMarket(
-      markerId: PinMarker.destPin,
-      position: destPosition,
-      iconMarker: destinationIcon,
-    );
-    addPolylines();
+  }
+
+  void showNearby({Distance? distance})async{
+
+    List<Data> filterNearby;
+    if(distance?.name == Distance.km3.name){
+      filterNearby = peopleNearby.where((data){
+        var geolocation = data.geolocation?.locationData;
+        double distance = double.parse(calculatorDistance(
+            currentLocation.value.latitude ?? 0,
+            currentLocation.value.longitude ?? 0,
+            geolocation?.latitude ?? 0,
+            geolocation?.longitude ?? 0,
+            "K"
+        ));
+        print("distance 3 :: $distance");
+        return distance <= 3.0;
+      }).toList();
+    }else if(distance?.name == Distance.km5.name){
+      filterNearby = peopleNearby.where((data){
+        var geolocation = data.geolocation?.locationData;
+        double distance = double.parse(calculatorDistance(
+            currentLocation.value.latitude ?? 0,
+            currentLocation.value.longitude ?? 0,
+            geolocation?.latitude ?? 0,
+            geolocation?.longitude ?? 0,
+            "K"
+        ));
+        print("distance 5 :: $distance");
+        return distance <= 5.0;
+      }).toList();
+    }else{
+      filterNearby = peopleNearby;
+    }
+    for(var i = 0; i < filterNearby.length; i++){
+      var data = filterNearby[i];
+      var nearbyLocation = data.geolocation?.locationData;
+      print("positionNEarby ${i} :: ${nearbyLocation?.latitude} , ${nearbyLocation?.longitude}");
+      _addMarkerDestination(
+        index: i,
+        position: LatLng(
+            nearbyLocation?.latitude ?? 0,
+            nearbyLocation?.longitude ?? 0
+        ),
+      );
+    }
   }
 
 ///Private Func
@@ -208,16 +273,30 @@ class SimpleGoogleMapController extends GetxController{
     return result;
   }
 
-   _addMarket({
-    required PinMarker markerId,
+  _addMarkerOrigin({
     required LatLng position,
-    BitmapDescriptor iconMarker = BitmapDescriptor.defaultMarker,
   }){
     markers.value.add(Marker(
-        markerId: MarkerId(markerId.name),
+        markerId: MarkerId(PinMarker.originPin.name),
         position: position,
-        icon: iconMarker
+        icon: originIcon
     ));
+  }
+
+  _addMarkerDestination({
+    required int index,
+    required LatLng position,
+  })async{
+
+    markers.value.add(
+        Marker(
+          markerId: MarkerId("${PinMarker.destPin.name}_$index"),
+          position: position,
+          icon: destinationIcon,
+          onTap: (){
+              addPolylines(destiLocation: position);
+              },
+        ));
   }
 
 }

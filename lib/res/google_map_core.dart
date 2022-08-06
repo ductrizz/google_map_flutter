@@ -7,15 +7,15 @@ const LatLng sourceLocation = LatLng(50.747932,-71.167889);
 const LatLng destiLocation = LatLng(37.4219983 , -122.094);
 
 enum PinMarker{
-  sourcePin,
+  originPin,
   destPin,
 }
 
 extension PinMarkerNameExt on  PinMarker{
   String get name {
     switch (this) {
-      case PinMarker.sourcePin:
-        return 'sourcePin';
+      case PinMarker.originPin:
+        return 'originPin';
       case PinMarker.destPin:
         return 'destPin';
       default:
@@ -28,11 +28,29 @@ extension PinMarkerNameExt on  PinMarker{
 
 extension GeolocationCaculator on String{
   LocationData get locationData {
-    List listValue = split(',');
+    List listValue = this.split(',');
     LocationData locationData = LocationData.fromMap({
-      "latitude": listValue[0],
-      "longitude": listValue[1],
+      "latitude": double.parse(listValue[0]),
+      "longitude": double.parse(listValue[1]),
     });
     return locationData;
+  }
+}
+
+enum Distance{
+  km3,
+  km5,
+}
+
+extension DistanceExt on  Distance{
+  String get name {
+    switch (this) {
+      case Distance.km3:
+        return 'km3';
+      case Distance.km5:
+        return 'km5';
+      default:
+        return 'null';
+    }
   }
 }
