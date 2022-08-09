@@ -27,13 +27,10 @@ extension PinMarkerNameExt on  PinMarker{
 
 
 extension GeolocationCaculator on String{
-  LocationData get locationData {
+  LatLng get convertLatLng {
     List listValue = this.split(',');
-    LocationData locationData = LocationData.fromMap({
-      "latitude": double.parse(listValue[0]),
-      "longitude": double.parse(listValue[1]),
-    });
-    return locationData;
+    LatLng convertValue = LatLng(double.parse(listValue[0]), double.parse(listValue[1]));
+    return convertValue;
   }
 }
 

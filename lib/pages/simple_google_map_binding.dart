@@ -6,6 +6,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:location/location.dart';
 import '../model/Data.dart';
 import '../repository/nearby_repository.dart';
+import '../res/bitmap_descriptor_cus.dart';
 import '../res/caculator.dart';
 import '../res/google_map_core.dart';
 import '../res/text_icon.dart';
@@ -20,6 +21,7 @@ class SimpleGoogleMapBinding implements Bindings{
 class SimpleGoogleMapController extends GetxController{
 ///Properties
   final NearbyRepository _nearbyRepository = NearbyRepository();
+  final BitmapDescriptorCus bitmapDescriptorCus = BitmapDescriptorCus();
   List<Data> peopleNearby = [];
   final Rx<Completer<GoogleMapController>>  mapController = Completer<GoogleMapController>().obs;
   var initialCameraPosition = const CameraPosition(
@@ -33,33 +35,21 @@ class SimpleGoogleMapController extends GetxController{
   RxSet<Polyline> polyLines = <Polyline>{}.obs;
   List<LatLng> polylineCoordinates = <LatLng>[];
   PolylinePoints polylinePoints = PolylinePoints();
-
-  // for my custom marker pins
-  late BitmapDescriptor originIcon;
-  late BitmapDescriptor destinationIcon;
-
-  // the user's initial location and current location
+  Location location = Location();
+  //
   Rx<LocationData> currentLocation = LocationData.fromMap({
     "latitude": 0.0,
     "longitude": 0.0,
   }).obs;
 
-  Rx<LocationData> destinationLocation = LocationData.fromMap({
-    "latitude": 0.0,
-    "longitude": 0.0,
-  }).obs;
-
-  // wrapper around the location API
-  Location location = Location();
 ///LifeCircle
   @override
   void onInit() async{
     super.onInit();
-    setInitialLocation();
-    await setSourceAndDestinationIcons();
     await getResponse();
+    await setInitialLocation();
     //Call Location
-    showNearby();
+
     location.onLocationChanged.listen((LocationData newCurrentLocation) {
       currentLocation = newCurrentLocation.obs;
       initialCameraPosition = CameraPosition(
@@ -84,33 +74,21 @@ class SimpleGoogleMapController extends GetxController{
 
 ///Create Polyline & Pin Marker
 
-  void onTapHandle(LatLng latLng){
-
-  }
-
- //Set Icon Bitmap.
-  Future<void> setSourceAndDestinationIcons() async {
-    originIcon = await BitmapDescriptor.fromAssetImage(
-        const ImageConfiguration(devicePixelRatio: 2.5,),
-        "assets/user_location_marker.png");
-
-    destinationIcon = await BitmapDescriptor.fromAssetImage(
-        const ImageConfiguration(devicePixelRatio: 2.5),
-        'assets/destination_map_marker.png');
-  }
   //Set InitialLocation.
-  void setInitialLocation() async {
+  Future<void> setInitialLocation() async {
     // current location from the location's getLocation()
     currentLocation = (await location.getLocation()).obs;
-
-    destinationLocation = (await LocationData.fromMap({
-      "latitude": (currentLocation.value.latitude ?? destiLocation.latitude) + 0.005,
-      "longitude": (currentLocation.value.longitude ?? destiLocation.longitude) + 0.001,
-    })).obs;
-
-    showPinsOnMap();
-    //await showNearby();
+    var marker = await _nearbyRepository.addOrigin(LatLng(
+        currentLocation.value.latitude ?? 0,
+        currentLocation.value.longitude ??0
+    ));
+    markers.add(
+        marker
+    );
+    //showPinsOnMap();
     fixCameraPosition();
+    showDataNearby();
+    //showNearby();
   }
 
   //Update Pin marker Current
@@ -119,13 +97,13 @@ class SimpleGoogleMapController extends GetxController{
       var pinPosition = LatLng(
           currentLocation.value.latitude ?? 0,
           currentLocation.value.longitude ?? 0);
-
       markers.removeWhere(
               (m) => m.markerId.value == PinMarker.originPin.name);
-
-      _addMarkerOrigin(
+      Marker marker = await _nearbyRepository.addOrigin(pinPosition);
+      markers.add(marker);
+      /*_addMarkerOrigin(
         position: pinPosition,
-      );
+      );*/
   }
 
   void fixCameraPosition() async{
@@ -182,17 +160,9 @@ class SimpleGoogleMapController extends GetxController{
           Marker(
               markerId: const MarkerId("title"),
               position: positionCenter,
-              icon: bitmapDescriptor,
+              icon: await bitmapDescriptorCus.forText("${totalCalculator.toStringAsFixed(2)} km"),
           ));
-          /*Marker(
-            markerId: const MarkerId("title"),
-            position: positionCenter,
-            icon: BitmapDescriptor.defaultMarkerWithHue(0),
-            infoWindow: InfoWindow(
-                title: "$totalCalculator km",
-              anchor: const Offset(-5.0 , -5.0)
-            )
-          ));*/
+
     }
   }
 
@@ -201,18 +171,38 @@ class SimpleGoogleMapController extends GetxController{
     var pinPosition = LatLng(
         currentLocation.value.latitude ?? 0,
         currentLocation.value.longitude ?? 0);
-
     _addMarkerOrigin(
       position: pinPosition,
     );
   }
 
-  void showNearby({Distance? distance})async{
+  void showDataNearby({Distance? distance})async{
+    var listNearby = await _nearbyRepository.showNearby(
+        originPointLat: currentLocation.value.latitude ?? 0 ,
+        originPointLong: currentLocation.value.longitude ?? 0);
+    for (var index = 0; index < listNearby.length; index++){
+      var data = listNearby[index];
+      var geolocation = data.geolocation?.convertLatLng;
+      LatLng position = LatLng(geolocation?.latitude ?? 0, geolocation?.longitude ?? 0);
+      String imgUrl = data.avatar ?? "";
+      markers.add(
+        await _nearbyRepository.addNearMarker(
+          index: index,
+          position: position, imgUrl: imgUrl,
+          onTap: (){
+          addPolylines(destiLocation: position);
+          },
+        )
+      );
+    }
+  }
 
+  /*void showNearby({Distance? distance})async{
     List<Data> filterNearby;
+
     if(distance?.name == Distance.km3.name){
       filterNearby = peopleNearby.where((data){
-        var geolocation = data.geolocation?.locationData;
+        var geolocation = data.geolocation?.convertLatLng;
         double distance = double.parse(calculatorDistance(
             currentLocation.value.latitude ?? 0,
             currentLocation.value.longitude ?? 0,
@@ -220,12 +210,11 @@ class SimpleGoogleMapController extends GetxController{
             geolocation?.longitude ?? 0,
             "K"
         ));
-        print("distance 3 :: $distance");
         return distance <= 3.0;
       }).toList();
     }else if(distance?.name == Distance.km5.name){
       filterNearby = peopleNearby.where((data){
-        var geolocation = data.geolocation?.locationData;
+        var geolocation = data.geolocation?.convertLatLng;
         double distance = double.parse(calculatorDistance(
             currentLocation.value.latitude ?? 0,
             currentLocation.value.longitude ?? 0,
@@ -233,7 +222,6 @@ class SimpleGoogleMapController extends GetxController{
             geolocation?.longitude ?? 0,
             "K"
         ));
-        print("distance 5 :: $distance");
         return distance <= 5.0;
       }).toList();
     }else{
@@ -241,7 +229,8 @@ class SimpleGoogleMapController extends GetxController{
     }
     for(var i = 0; i < filterNearby.length; i++){
       var data = filterNearby[i];
-      var nearbyLocation = data.geolocation?.locationData;
+      String? imgUrl = data.avatar;
+      var nearbyLocation = data.geolocation?.convertLatLng;
       print("positionNEarby ${i} :: ${nearbyLocation?.latitude} , ${nearbyLocation?.longitude}");
       _addMarkerDestination(
         index: i,
@@ -249,9 +238,10 @@ class SimpleGoogleMapController extends GetxController{
             nearbyLocation?.latitude ?? 0,
             nearbyLocation?.longitude ?? 0
         ),
+        imgUrl: imgUrl,
       );
     }
-  }
+  }*/
 
 ///Private Func
   Future<PolylineResult> _polyLinePoints({
@@ -275,28 +265,29 @@ class SimpleGoogleMapController extends GetxController{
 
   _addMarkerOrigin({
     required LatLng position,
-  }){
+  })async{
     markers.value.add(Marker(
         markerId: MarkerId(PinMarker.originPin.name),
         position: position,
-        icon: originIcon
+        icon: await bitmapDescriptorCus.fromAssetImage("assets/user_location_marker.png")
     ));
   }
 
   _addMarkerDestination({
     required int index,
     required LatLng position,
+    required imgUrl
   })async{
-
     markers.value.add(
         Marker(
           markerId: MarkerId("${PinMarker.destPin.name}_$index"),
           position: position,
-          icon: destinationIcon,
+          icon: await bitmapDescriptorCus.fromNetworkImage(imgUrl: imgUrl),
           onTap: (){
-              addPolylines(destiLocation: position);
-              },
-        ));
+            addPolylines(destiLocation: position);
+            print("press ${PinMarker.destPin.name}_$index");
+          },
+        )
+    );
   }
-
 }

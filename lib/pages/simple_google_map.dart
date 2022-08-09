@@ -38,18 +38,18 @@ class SimpleGoogleMap extends GetView<SimpleGoogleMapController> {
       ),
       body: Obx(() {
         Set markers = controller.markers;
-        print("market ${markers.length} :: , ${markers}");
+        print("Marker UI ${markers.length}  :: ${markers} ");
         controller.polyLines.value.forEach((element) {
         });
         return Stack(
           children: [
             GoogleMap(
-              myLocationEnabled: true,
-              tiltGesturesEnabled: true,
+              myLocationEnabled: false,
+              tiltGesturesEnabled: false,
               compassEnabled: true,
               scrollGesturesEnabled: true,
               zoomGesturesEnabled: true,
-              myLocationButtonEnabled: true,
+              myLocationButtonEnabled: false,
               markers: controller.markers,
               polylines: controller.polyLines,
               mapType: MapType.normal,
@@ -124,13 +124,13 @@ class SimpleGoogleMap extends GetView<SimpleGoogleMapController> {
     elevation: 2,
     onSelected: (value){
       if(value == 1){
-        controller.showNearby(distance: Distance.km3);
+        controller.showDataNearby(distance: Distance.km3);
       }
       if(value == 2){
-        controller.showNearby(distance: Distance.km5);
+        controller.showDataNearby(distance: Distance.km5);
       }
       if(value == 3){
-        controller.showNearby();
+        controller.showDataNearby();
       }
     },
   );
