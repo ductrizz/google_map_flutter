@@ -1,16 +1,14 @@
 import 'package:custom_marker/marker_icon.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_polyline_points/flutter_polyline_points.dart';
 import 'package:google_map_flutter/model/Data.dart';
 import 'package:google_map_flutter/model/Nearby_entity.dart';
-import 'package:google_map_flutter/model/polyline_entity.dart';
 import 'package:google_map_flutter/res/bitmap_descriptor_cus.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'dart:convert' as convert;
 import 'package:http/http.dart' as http;
 import 'package:label_marker/label_marker.dart';
 
-import '../res/caculator.dart';
+import '../res/calculator.dart';
 import '../res/google_map_core.dart';
 
 class NearbyRepository{
@@ -46,7 +44,6 @@ class NearbyRepository{
     required double originPointLong,
   })async{
     List<Data> filterNearby = [];
-    List<Marker> markers = [];
     if(distance?.name == Distance.km3.name){
       filterNearby = peopleNearby.where((data){
         var geolocation = data.geolocation?.convertLatLng;

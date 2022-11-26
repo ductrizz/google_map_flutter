@@ -7,9 +7,8 @@ import 'package:location/location.dart';
 import '../model/Data.dart';
 import '../repository/nearby_repository.dart';
 import '../res/bitmap_descriptor_cus.dart';
-import '../res/caculator.dart';
+import '../res/calculator.dart';
 import '../res/google_map_core.dart';
-import '../res/text_icon.dart';
 
 class SimpleGoogleMapBinding implements Bindings{
   @override
@@ -82,7 +81,7 @@ class SimpleGoogleMapController extends GetxController{
         currentLocation.value.latitude ?? 0,
         currentLocation.value.longitude ??0
     ));
-    markers.add(
+    markers.value.add(
         marker
     );
     fixCameraPosition();
@@ -95,10 +94,10 @@ class SimpleGoogleMapController extends GetxController{
       var pinPosition = LatLng(
           currentLocation.value.latitude ?? 0,
           currentLocation.value.longitude ?? 0);
-      markers.removeWhere(
+      markers.value.removeWhere(
               (m) => m.markerId.value == PinMarker.originPin.name);
       Marker marker = await _nearbyRepository.addOrigin(pinPosition);
-      markers.add(marker);
+      markers.value.add(marker);
   }
 
   void showDataNearby({Distance? distance})async{
@@ -112,7 +111,7 @@ class SimpleGoogleMapController extends GetxController{
       var geolocation = data.geolocation?.convertLatLng;
       LatLng position = LatLng(geolocation?.latitude ?? 0, geolocation?.longitude ?? 0);
       String imgUrl = data.avatar ?? "";
-      markers.add(
+      markers.value.add(
         await _nearbyRepository.addNearMarker(
           index: index,
           position: position, imgUrl: imgUrl,
@@ -171,16 +170,15 @@ class SimpleGoogleMapController extends GetxController{
       var indexCenter = (polylineCoordinates.length/2).ceil();
       var positionCenter = polylineCoordinates[indexCenter];
 
-      markers.removeWhere(
-              (m) => m.markerId.value == "title");
-      BitmapDescriptor bitmapDescriptor = await createCustomMarkerBitmap("${totalCalculator.toStringAsPrecision(2)} km");
+      markers.value.removeWhere(
+              (m) => m.markerId.value == "kmIcon");
+      BitmapDescriptor kmIcon = await bitmapDescriptorCus.forText("${totalCalculator.toStringAsFixed(2)} km");
       markers.value.add(
           Marker(
-            markerId: const MarkerId("title"),
+            markerId: const MarkerId("kmIcon"),
             position: positionCenter,
-            icon: await bitmapDescriptorCus.forText("${totalCalculator.toStringAsFixed(2)} km"),
+            icon: kmIcon,
           ));
-
     }
   }
 

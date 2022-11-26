@@ -1,18 +1,16 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
-import 'package:flutter_polyline_points/flutter_polyline_points.dart';
 import 'package:get/get.dart';
 import 'package:get/get_state_manager/get_state_manager.dart';
 import 'package:get/state_manager.dart';
 import 'package:google_map_flutter/pages/simple_google_map_binding.dart' ;
 import 'package:google_map_flutter/res/google_map_core.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:location/location.dart';
 
 
 
 class SimpleGoogleMap extends GetView<SimpleGoogleMapController> {
+  const SimpleGoogleMap({Key? key}) : super(key: key);
+
 
   @override
   Widget build(BuildContext context) {
@@ -37,10 +35,6 @@ class SimpleGoogleMap extends GetView<SimpleGoogleMapController> {
         ),
       ),
       body: Obx(() {
-        Set markers = controller.markers;
-        print("Marker UI ${markers.length}  :: ${markers} ");
-        controller.polyLines.value.forEach((element) {
-        });
         return Stack(
           children: [
             GoogleMap(
@@ -50,8 +44,8 @@ class SimpleGoogleMap extends GetView<SimpleGoogleMapController> {
               scrollGesturesEnabled: true,
               zoomGesturesEnabled: true,
               myLocationButtonEnabled: false,
-              markers: controller.markers,
-              polylines: controller.polyLines,
+              markers: controller.markers.value,
+              polylines: controller.polyLines.value,
               mapType: MapType.normal,
               initialCameraPosition: controller.initialCameraPosition.value,
               onMapCreated: (GoogleMapController newController) {
